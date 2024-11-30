@@ -1,46 +1,80 @@
 
 apiKey = localStorage.getItem('apiKey')
 accNo = localStorage.getItem('accNo')
-let stream
+let stream,bidPrice,askPrice,midPrice,liveChart
+let count = 0
+const liveChartValues = [[],[]]
 fetch(`https://stream-fxtrade.oanda.com/v3/accounts/${accNo}/pricing/stream?instruments=NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`}})
 .then((response)=>{
-    stream = response.body.getReader()
+    stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
+}).then(()=>{
+    streamRecursor()
 })
+
+function streamRecursor(){
+    stream.read().
+    then((chunk)=>{
+        let parsed = JSON.parse(chunk.value)
+        if (parsed.type == 'HEARTBEAT'){
+            return
+        }
+        bidPrice = Number(parsed.closeoutBid)
+        askPrice = Number(parsed.closeoutAsk)
+        midPrice = (bidPrice+askPrice)/2
+        try {
+            document.querySelector('#midPrice').innerHTML = midPrice.toFixed(5)
+        } catch (error) {
+        }
+        
+    }).then(()=>{
+        setTimeout(streamRecursor,300)
+    })
+    
+}
+
+function chartRecursor(){
+    new Promise((resolve,reject)=>{
+        date = new Date()
+        let hrs = date.getHours()
+        let mins = date.getMinutes()
+        let secs = date.getSeconds()
+        liveChartValues[0].push(`${hrs}:${mins}:${secs}`)
+        liveChartValues[1].push(midPrice)
+        liveChart.update()
+        resolve()
+    }).then(()=>{
+        setTimeout(chartRecursor,500)
+    })
+}
+
 document.addEventListener("DOMContentLoaded",(e)=>{
 //DOMContentLoaded block start
 
-document.querySelector('#test').onclick= (e)=>{stream.read().
-    then((chunk)=>{
-        console.log(chunk)
-    }
-
-    )}
 document.querySelector('#logout').onclick = (e) =>{
     localStorage.clear();
     location.replace('login.html');
 }
-const xValues = [50,60,70,80,90,100,110,120,130,140,150];
-const yValues = [7,8,8,9,9,9,10,11,14,14,15];
 
-new Chart("myChart", {
+document.querySelector('#accounts').onclick = (e) =>{
+    localStorage.removeItem('accNo');
+    location.replace('accounts.html');
+}
+
+liveChart = new Chart("liveChart", {
 type: "line",
 data: {
-    labels: xValues,
+    labels: liveChartValues[0],
     datasets: [{
     fill: false,
     lineTension: 0,
     backgroundColor: "rgba(0,0,255,1.0)",
     borderColor: "rgba(0,0,255,0.1)",
-    data: yValues
+    pointRadius:0.5,
+    data: liveChartValues[1]
     }]
-},
-options: {
-    legend: {display: false},
-    scales: {
-    yAxes: [{ticks: {min: 6, max:16}}],
-    }
 }
 });
+chartRecursor();
 
 //DOMContentLoaded block end
 })

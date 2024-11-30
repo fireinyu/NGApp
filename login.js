@@ -1,24 +1,28 @@
 document.addEventListener("DOMContentLoaded",(e)=>{
     document.querySelector('#form').onsubmit = () =>{
         const apiKey = document.querySelector('#apiKey').value;
-        const accNo = document.querySelector('#accNo').value;
-        fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}`,{headers : {'Authorization':`Bearer ${apiKey}`}})
+        fetch(`https://api-fxtrade.oanda.com/v3/accounts`,{headers : {'Authorization':`Bearer ${apiKey}`}})
         .then((response)=>{
             return new Promise((resolve,reject)=>{
                 if (response.status === 200){
-                    resolve()
+                    resolve(response)
                 }
                 reject(response.status)
             })
         })
-        .then(()=>{
-            location.replace('dashboard.html')
+        .then((response)=>{
+            localStorage.setItem('apiKey',apiKey)
+            response.json().then((jsonObj)=>{
+                console.log(jsonObj)
+                localStorage.setItem('accounts',JSON.stringify(jsonObj.accounts))
+
+            })
+            location.replace('accounts.html')
             }      
         ,(status)=>{
             alert(`login rejected with status code ${status}`)
         })
-        localStorage.setItem('accNo',accNo)
-        localStorage.setItem('apiKey',apiKey)
+        
         return false
         
     }
