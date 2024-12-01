@@ -4,38 +4,26 @@ accNo = localStorage.getItem('accNo')
 let stream,bidPrice,askPrice,midPrice,liveChart,hist
 let count = 0
 const priceData = []
-let pendingCalls = 0
 
-pendingCalls += 1
-fetch(`https://stream-fxtrade.oanda.com/v3/accounts/${accNo}/pricing/stream?instruments=NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`}})
-.then((response)=>{
-    stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
-})
-.then(()=>{
-    pendingCalls -= 1;
-    if (pendingCalls === 0){
-        for (candle of hist){
-            priceData.push({x:new Date(candle.time),y:Number(candle.mid.o),markerType:'none'})
-        }
-        streamRecursor()
-    }
-})
-pendingCalls +=1
-fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles`,{headers : {'Authorization':`Bearer ${apiKey}`}})
-.then((response) => {
-    response.json()
-    .then((jsonObj)=>{
-    hist = jsonObj.candles
-    pendingCalls -= 1;
-    if (pendingCalls === 0){
-        for (candle of hist){
-            priceData.push({x:new Date(candle.time),y:Number(candle.mid.o),markerType:'none'})
-        }
-        streamRecursor()
-    }
+Promise.all([
+    fetch(`https://stream-fxtrade.oanda.com/v3/accounts/${accNo}/pricing/stream?instruments=NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`}})
+    .then((response)=>{
+        stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
+    }),
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles`,{headers : {'Authorization':`Bearer ${apiKey}`}})
+    .then((response) => {
+        response.json()
+        .then((jsonObj)=>{
+        hist =jsonObj.candles
+        })
     })
+])
+.then(()=>{
+    for (candle of hist){
+        priceData.push({x:new Date(candle.time),y:Number(candle.mid.o),markerType:'none'})
+    }
+    streamRecursor()
 })
-
     
 
 
