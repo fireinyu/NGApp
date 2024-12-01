@@ -1,50 +1,70 @@
 
 apiKey = localStorage.getItem('apiKey')
 accNo = localStorage.getItem('accNo')
-let stream,bidPrice,askPrice,midPrice,liveChart
+let stream,bidPrice,askPrice,midPrice,liveChart,hist
 let count = 0
-const liveChartValues = [[],[]]
+const priceData = []
+let pendingCalls = 0
+
+pendingCalls += 1
 fetch(`https://stream-fxtrade.oanda.com/v3/accounts/${accNo}/pricing/stream?instruments=NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`}})
 .then((response)=>{
     stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
-}).then(()=>{
-    streamRecursor()
 })
+.then(()=>{
+    pendingCalls -= 1;
+    if (pendingCalls === 0){
+        for (candle of hist){
+            priceData.push({x:new Date(candle.time),y:Number(candle.mid.o),markerType:'none'})
+        }
+        streamRecursor()
+    }
+})
+pendingCalls +=1
+fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles`,{headers : {'Authorization':`Bearer ${apiKey}`}})
+.then((response) => {
+    response.json()
+    .then((jsonObj)=>{
+    hist = jsonObj.candles
+    pendingCalls -= 1;
+    if (pendingCalls === 0){
+        for (candle of hist){
+            priceData.push({x:new Date(candle.time),y:Number(candle.mid.o),markerType:'none'})
+        }
+        streamRecursor()
+    }
+    })
+})
+
+    
+
+
 
 function streamRecursor(){
     stream.read().
     then((chunk)=>{
         let parsed = JSON.parse(chunk.value)
-        if (parsed.type == 'HEARTBEAT'){
-            return
+        time = new Date(parsed.time)
+        if (parsed.type == 'PRICE'){
+            bidPrice = Number(parsed.closeoutBid)
+            askPrice = Number(parsed.closeoutAsk)
+            midPrice = (bidPrice+askPrice)/2
         }
-        bidPrice = Number(parsed.closeoutBid)
-        askPrice = Number(parsed.closeoutAsk)
-        midPrice = (bidPrice+askPrice)/2
         try {
             document.querySelector('#midPrice').innerHTML = midPrice.toFixed(5)
+            priceData.slice(-1)[0].markerType = 'none'
+            priceData.push({x:time,y:midPrice})
+            liveChart.render()
         } catch (error) {
         }
+        
+        
+        
         
     }).then(()=>{
         setTimeout(streamRecursor,300)
     })
     
-}
-
-function chartRecursor(){
-    new Promise((resolve,reject)=>{
-        date = new Date()
-        let hrs = date.getHours()
-        let mins = date.getMinutes()
-        let secs = date.getSeconds()
-        liveChartValues[0].push(`${hrs}:${mins}:${secs}`)
-        liveChartValues[1].push(midPrice)
-        liveChart.update()
-        resolve()
-    }).then(()=>{
-        setTimeout(chartRecursor,500)
-    })
 }
 
 document.addEventListener("DOMContentLoaded",(e)=>{
@@ -60,21 +80,47 @@ document.querySelector('#accounts').onclick = (e) =>{
     location.replace('accounts.html');
 }
 
-liveChart = new Chart("liveChart", {
-type: "line",
-data: {
-    labels: liveChartValues[0],
-    datasets: [{
-    fill: false,
-    lineTension: 0,
-    backgroundColor: "rgba(0,0,255,1.0)",
-    borderColor: "rgba(0,0,255,0.1)",
-    pointRadius:0.5,
-    data: liveChartValues[1]
-    }]
-}
+liveChart = new CanvasJS.Chart('liveChartContainer',{
+    zoomEnabled:true,
+    margin:10,
+    title:{
+        text:'Live Natural Gas Price'
+    },
+    axisX:{
+        gridThickness:0.3,
+        gridDashType:'dash',
+        valueFormatString:'hh:mm:ss',
+        crosshair:{
+            enabled:true,
+            thickness:0.5,
+        }
+    },
+    axisY:{
+        gridThickness:0,
+        interlacedColor: "#F0F8FF",
+        crosshair:{
+            enabled:true,
+            thickness:0.5
+        }
+    },
+    data:[
+        {
+            toolTipContent:'{y}',     
+            type: 'line',
+            name: 'mid price',
+            showInLegend:true,
+            markerType:'circle',
+            markerColor:'red',
+            markerSize:5,
+            color:'orange',
+            dataPoints:priceData
+        },
+        {
+            toolTipContent:null
+
+        }
+    ]
 });
-chartRecursor();
 
 //DOMContentLoaded block end
 })
