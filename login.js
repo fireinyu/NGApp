@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded",(e)=>{
             location.replace('accounts.html')
             }      
         ,(status)=>{
+            document.querySelector('#apiKey').value = '';
             alert(`login rejected with status code ${status}`)
         })
         
