@@ -1,22 +1,27 @@
 
-apiKey = localStorage.getItem('apiKey')
-accNo = localStorage.getItem('accNo')
 let stream,bidPrice,askPrice,midPrice,liveChart,hist,epoch
 let count = 0
 const priceData = []
+const shapes = [
+    {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'}
+    ]
 
 Promise.all([
     fetch(`https://stream-fxtrade.oanda.com/v3/accounts/${accNo}/pricing/stream?instruments=NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
     .then((response)=>{
         stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
     }),
-    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=720&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=5000&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
     .then((response) => {
         return response.json()
-        .then ((jsonObj)=>{
-            hist = jsonObj.candles
-            console.log(hist)
-        })
+    })
+    .then ((jsonObj)=>{
+        hist = jsonObj.candles
     })
 ])
 .then(()=>{
@@ -59,8 +64,8 @@ function streamRecursor(){
         }
         try {
             document.querySelector('#midPrice').innerHTML = midPrice.toFixed(5)
-            priceData.slice(-1)[0].markerSize = 1;
-            priceData.slice(-1)[0].markerColor = 'orange';
+            priceData[priceData.length-1].markerSize = 1;
+            priceData[priceData.length-1].markerColor = 'orange';
             priceData.push({x:Number(parsed.time)-epoch,y:midPrice,markerSize:6,markerColor:'red'})
             liveChart.render()
         } catch (error) {
@@ -124,12 +129,22 @@ liveChart = new CanvasJS.Chart('liveChartContainer',{
             color:'orange',
             dataPoints:priceData
         },
-        {
-            toolTipContent:null
+        shapes[0],
+        shapes[1],
+        shapes[2],
+        shapes[3],
+        shapes[4],
+        shapes[5]
 
-        }
+        
     ]
 });
-
+document.querySelector('#predict').onclick = ()=>{
+    getAction().then(()=>{
+        let thisDate = new Date(modelEpoch*1000)
+        document.querySelector('#modelEpoch').innerHTML = `Prediction is relative to data at ${String(thisDate.getHours()).padStart(2,'0')}:${String(thisDate.getMinutes()).padStart(2,'0')}`
+        liveChart.render()
+    })
+}
 //DOMContentLoaded block end
 })
