@@ -16,7 +16,7 @@ Promise.all([
     .then((response)=>{
         stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
     }),
-    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=5000&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=5000&granularity=M30`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
     .then((response) => {
         return response.json()
     })
@@ -32,7 +32,7 @@ Promise.all([
         let hh = String(thisDate.getHours()).padStart(2,'0');
         let mm = String(thisDate.getMinutes()).padStart(2,'0');
         let ss = String(thisDate.getSeconds()).padStart(2,'0');
-        priceData.push({x:120*(i+1-len),y:Number(hist[i].mid.o),label:`${hh}:${mm}:${ss}`})
+        priceData.push({x:1800*(i+1-len),y:Number(hist[i].mid.o),label:`${hh}:${mm}:${ss}`})
     }
     epoch = hist[len-1].time
     let thisDate = new Date(Number(hist[len-1].time*1000));
@@ -67,12 +67,12 @@ function streamRecursor(){
             priceData[priceData.length-1].markerSize = 1;
             priceData[priceData.length-1].markerColor = 'orange';
             priceData.push({x:Number(parsed.time)-epoch,y:midPrice,markerSize:6,markerColor:'red'})
+            liveChart.options.axisX.viewportMinimum = Number(parsed.time) - epoch - 82800
+            liveChart.options.axisX.viewportMaximum = Number(parsed.time) -epoch + 3600
             liveChart.render()
         } catch (error) {
         }
-        
-        
-        
+                
         
     }).then(()=>{
         setTimeout(streamRecursor,300)
@@ -86,11 +86,6 @@ document.addEventListener("DOMContentLoaded",(e)=>{
 document.querySelector('#logout').onclick = (e) =>{
     localStorage.clear();
     location.replace('login.html');
-}
-
-document.querySelector('#accounts').onclick = (e) =>{
-    localStorage.removeItem('accNo');
-    location.replace('accounts.html');
 }
 
 liveChart = new CanvasJS.Chart('liveChartContainer',{
@@ -139,12 +134,21 @@ liveChart = new CanvasJS.Chart('liveChartContainer',{
         
     ]
 });
+document.querySelector('#accounts').onclick = (e) =>{
+    localStorage.removeItem('accNo');
+    location.replace('accounts.html');
+}
 document.querySelector('#predict').onclick = ()=>{
+    document.querySelector('#predict').innerHTML = "loading..."
+    document.querySelector('#predict').disabled = true
     getAction().then(()=>{
+        document.querySelector('#predict').innerHTML = "predict"
+        document.querySelector('#predict').disabled = false
         let thisDate = new Date(modelEpoch*1000)
         document.querySelector('#modelEpoch').innerHTML = `Prediction is relative to data at ${String(thisDate.getHours()).padStart(2,'0')}:${String(thisDate.getMinutes()).padStart(2,'0')}`
         liveChart.render()
     })
 }
+document.querySelector("#predict").disabled = false
 //DOMContentLoaded block end
 })
