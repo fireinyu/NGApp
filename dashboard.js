@@ -16,7 +16,7 @@ Promise.all([
     .then((response)=>{
         stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
     }),
-    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=5000&granularity=M30`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=1500&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
     .then((response) => {
         return response.json()
     })
@@ -32,7 +32,7 @@ Promise.all([
         let hh = String(thisDate.getHours()).padStart(2,'0');
         let mm = String(thisDate.getMinutes()).padStart(2,'0');
         let ss = String(thisDate.getSeconds()).padStart(2,'0');
-        priceData.push({x:1800*(i+1-len),y:Number(hist[i].mid.o),label:`${hh}:${mm}:${ss}`})
+        priceData.push({x:120*(i+1-len),y:Number(hist[i].mid.o),label:`${hh}:${mm}:${ss}`})
     }
     epoch = hist[len-1].time
     let thisDate = new Date(Number(hist[len-1].time*1000));
