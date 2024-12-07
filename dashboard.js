@@ -63,12 +63,14 @@ function streamRecursor(){
             midPrice = (bidPrice+askPrice)/2
         }
         try {
-            document.querySelector('#midPrice').innerHTML = midPrice.toFixed(5)
+            let thisDate = new Date(parsed.time*1000)
+            document.querySelector('#midPrice').innerHTML = `Price: ${midPrice.toFixed(5)}` 
+            document.querySelector('#priceTime').innerHTML=`(updated at ${thisDate.toLocaleString('en-GB')})`
             priceData[priceData.length-1].markerSize = 1;
             priceData[priceData.length-1].markerColor = 'orange';
             priceData.push({x:Number(parsed.time)-epoch,y:midPrice,markerSize:6,markerColor:'red'})
-            liveChart.options.axisX.viewportMinimum = Number(parsed.time) - epoch - 82800
-            liveChart.options.axisX.viewportMaximum = Number(parsed.time) -epoch + 3600
+            liveChart.options.axisX.viewportMinimum = parsed.time - epoch - 82800
+            liveChart.options.axisX.viewportMaximum = parsed.time -epoch + 3600
             liveChart.render()
         } catch (error) {
         }
@@ -145,7 +147,7 @@ document.querySelector('#predict').onclick = ()=>{
         document.querySelector('#predict').innerHTML = "predict"
         document.querySelector('#predict').disabled = false
         let thisDate = new Date(modelEpoch*1000)
-        document.querySelector('#modelEpoch').innerHTML = `Prediction is relative to data at ${String(thisDate.getHours()).padStart(2,'0')}:${String(thisDate.getMinutes()).padStart(2,'0')}`
+        document.querySelector('#modelEpoch').innerHTML = `Prediction is relative to data at ${thisDate.toLocaleString('en-GB')}`
         liveChart.render()
     })
 }
