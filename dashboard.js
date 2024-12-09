@@ -1,6 +1,7 @@
 
 let stream,bidPrice,askPrice,midPrice,liveChart,hist,epoch
 let count = 0
+let showSide = "short"
 const priceData = []
 const shapes = [
     {type:'line',markerType:'none'},
@@ -48,23 +49,24 @@ Promise.all([
     }]
 
     streamRecursor()
-})
-    
-
-
+})  
 
 function streamRecursor(){
     stream.read().
     then((chunk)=>{
-        let parsed = JSON.parse(chunk.value)
-        if (parsed.type == 'PRICE'){
-            bidPrice = Number(parsed.closeoutBid)
-            askPrice = Number(parsed.closeoutAsk)
-            midPrice = (bidPrice+askPrice)/2
-        }
         try {
+            let parsed = JSON.parse(chunk.value)
+            if (parsed.type == 'PRICE'){
+                bidPrice = Number(parsed.closeoutBid)
+                askPrice = Number(parsed.closeoutAsk)
+                midPrice = (bidPrice+askPrice)/2
+            }
             let thisDate = new Date(parsed.time*1000)
-            document.querySelector('#midPrice').innerHTML = `Price: ${midPrice.toFixed(5)}` 
+            document.querySelector('#midPrice').innerHTML = `Mid Price: ${midPrice.toFixed(5)}` 
+            document.querySelectorAll('.bid').forEach((e)=>{e.innerHTML = bidPrice.toFixed(5)})
+            document.querySelectorAll('.ask').forEach((e)=>{e.innerHTML = askPrice.toFixed(5)})
+            document.querySelector('#sPL').innerHTML = Number(document.querySelector('#sUnits').innerHTML)* (Number(document.querySelector('#sAP').innerHTML)-askPrice)
+            document.querySelector('#lPL').innerHTML = Number(document.querySelector('#lUnits').innerHTML)* (bidPrice-Number(document.querySelector('#lAP').innerHTML))
             document.querySelector('#priceTime').innerHTML=`(updated at ${thisDate.toLocaleString('en-GB')})`
             priceData[priceData.length-1].markerSize = 1;
             priceData[priceData.length-1].markerColor = 'orange';
@@ -81,6 +83,29 @@ function streamRecursor(){
     })
     
 }
+async function updateAcc(){
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/positions/NATGAS_USD`,{headers : {'Authorization':`Bearer ${apiKey}`}})
+    .then((response)=>{
+        if (response.status === 200){
+            return response.json()
+        }
+        return false
+        
+    })
+    .then((jsonObj)=>{
+        if (jsonObj){
+            let pos = jsonObj.position
+            console.log(pos)
+            document.querySelector('#sUnits').innerHTML = -Number(pos.short.units)
+            document.querySelector('#lUnits').innerHTML = pos.long.units
+            document.querySelector('#sAP').innerHTML = (pos.short.averagePrice)
+            document.querySelector('#lAP').innerHTML = (pos.long.averagePrice)
+
+        }
+    })
+}
+
+updateAcc()
 
 document.addEventListener("DOMContentLoaded",(e)=>{
 //DOMContentLoaded block start
@@ -151,6 +176,158 @@ document.querySelector('#predict').onclick = ()=>{
         liveChart.render()
     })
 }
-document.querySelector("#predict").disabled = false
+
+document.querySelector("#predict").disabled = false;
+let long = document.querySelector('#lToggle');
+let short = document.querySelector('#sToggle');
+short.onclick  = (e)=>{
+    short.disabled = true;
+    long.style['border-width'] = '1px';
+    long.style['border-color'] = 'grey';
+    long.style['font-weight'] = 'normal';
+    short.style['border-color'] = 'orange';
+    short.style['border-width'] = '3px';
+    short.style['font-weight'] = 'bold';
+    document.querySelector('#long').hidden = true;
+    document.querySelector('#short').hidden = false;
+    long.disabled = false;
+
+}
+long.onclick  = (e)=>{
+    long.disabled = true;
+    short.style['border-width'] = '1px';
+    short.style['border-color'] = 'grey';
+    short.style['font-weight'] = 'normal';
+    long.style['border-color'] = 'orange';
+    long.style['border-width'] = '3px';
+    long.style['font-weight'] = 'bold'
+    document.querySelector('#short').hidden = true;
+    document.querySelector('#long').hidden = false;
+    short.disabled = false;
+
+}
+document.querySelector('#sClose').onclick = (e)=>{
+    let units = Number(document.querySelector('#sUnits').innerHTML)
+    if(units <=0){
+        alert('no short position to close')
+        return
+    }
+    if(confirm(`Click 'OK' to close NATGAS short position of ${units} units with a market order`)){
+        fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/orders`,{method:'POST',headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX",'Content-Type': "application/json"},body:JSON.stringify({
+            order:{
+                type:'MARKET',
+                instrument:'NATGAS_USD',
+                units:`${units}`,
+                timeInForce:'FOK',
+                positionFill:'REDUCE_ONLY'
+            }
+        })})
+        .then((response)=>{
+            if (response.status === 201){
+                return response.json()
+            }else{
+                alert('failed to close short position')
+            }
+        })
+        .then((jsonObj)=>{
+            updateAcc()
+            if(jsonObj.orderFillTransaction){
+                alert('short position closed successfully')
+            }
+        })
+    }
+}
+document.querySelector('#lClose').onclick = (e)=>{
+    let units = Number(document.querySelector('#lUnits').innerHTML)
+    if(units <=0){
+        alert('no short position to close')
+        return
+    }
+    if(confirm(`Click 'OK' to close NATGAS short position of ${units} units with a market order`)){
+        fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/orders`,{method:'POST',headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX",'Content-Type': "application/json"},body:JSON.stringify({
+            order:{
+                type:'MARKET',
+                instrument:'NATGAS_USD',
+                units:`-${units}`,
+                timeInForce:'FOK',
+                positionFill:'REDUCE_ONLY'
+            }
+        })})
+        .then((response)=>{
+            if (response.status === 201){
+                return response.json()
+            }else{
+                alert('failed to close long position')
+            }
+        })
+        .then((jsonObj)=>{
+            updateAcc()
+            if(jsonObj.orderFillTransaction){
+                alert('long position closed successfully')
+            }
+        })
+    }
+}
+document.querySelector('#sAdd').onclick = (e)=>{
+    let units = document.querySelector('#sAddU').value
+    if (!units){
+        units = document.querySelector('#sAddU').placeholder
+    }
+    if(confirm(`Click 'OK' to add ${units} units to NATGAS short position with a market order`)){
+        fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/orders`,{method:'POST',headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX",'Content-Type': "application/json"},body:JSON.stringify({
+            order:{
+                type:'MARKET',
+                instrument:'NATGAS_USD',
+                units:`-${units}`,
+                timeInForce:'FOK',
+                positionFill:'DEFAULT'
+            }
+        })})
+        .then((response)=>{
+            if (response.status === 201){
+                return response.json()
+            }else{
+                alert('failed to place order')
+            }
+        })
+        .then((jsonObj)=>{
+            updateAcc()
+            if(jsonObj.orderFillTransaction){
+                alert('order success')
+            }
+        })
+    }
+}
+document.querySelector('#lAdd').onclick = (e)=>{
+    let units = document.querySelector('#lAddU').value
+    if (!units){
+        units = document.querySelector('#lAddU').placeholder
+    }
+    if(confirm(`Click 'OK' to add ${units} units to NATGAS long position with a market order`)){
+        fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/orders`,{method:'POST',headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX",'Content-Type': "application/json"},body:JSON.stringify({
+            order:{
+                type:'MARKET',
+                instrument:'NATGAS_USD',
+                units:units,
+                timeInForce:'FOK',
+                positionFill:'DEFAULT'
+            }
+        })})
+        .then((response)=>{
+            if (response.status === 201){
+                return response.json()
+            }else{
+                alert('failed to place order')
+            }
+        })
+        .then((jsonObj)=>{
+            updateAcc()
+            if(jsonObj.orderFillTransaction){
+                alert('order success')
+            }
+        })
+        
+    }
+}
 //DOMContentLoaded block end
 })

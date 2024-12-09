@@ -2,6 +2,7 @@
 <html lang = 'en'>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href = "dashboard.css" rel = "stylesheet">
         <script src="canvasjs.min.js"></script>
         <script src = "attributes.js"></script>
         <script src = "model.js"></script>
@@ -11,13 +12,83 @@
         <button id = 'logout'>logout</button>
         <button id = 'accounts'>change account</button>
         <h1 id = 'midPrice'>loading...</h1>
-        <h3 id = 'priceTime'></h3>
+        <h4 id = 'priceTime'></h4>
         <div id = 'liveChartContainer' style = "height:500px;width:viewport">
         </div>
 
         <button id = 'predict' disabled = true>predict</button>
         <h4 id = 'modelEpoch'>press 'predict' to make prediction</h4>
-        
+
+        <h4>current position:</h4>
+        <button style = "display:inline;border-width:3px;border-color:orange;color:black;font-weight:bold" id = "sToggle" disabled>short</button>
+        <button  style = "display:inline;border-width:1px;border-color:grey;color:black;font-weight:normal" id = "lToggle">long</button>
+    
+        <div id = 'short'>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Units</th>
+                        <th>Average Price</th>
+                        <th>Last Ask</th>
+                        <th>P/L</th>
+                    </tr>
+                    <tr>
+                        <td id = 'sUnits'></td>
+                        <td id = 'sAP'></td>
+                        <td class = 'ask'></td>
+                        <td id = 'sPL'></td>
+                        <td id = "sClose"><button>close</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Last Bid</th>
+                        <th>Units to Add</th>
+                    </tr>
+                    <tr>
+                        <td class = "bid"></td>
+                        <td><input type = 'text' id ='sAddU' placeholder = 10></td>
+                        <td id = "sAdd"><button>add</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id = 'long' hidden>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Units</th>
+                        <th>Average Price</th>
+                        <th>Last Bid</th>
+                        <th>P/L</th>
+                    </tr>
+                    <tr>
+                        <td id = 'lUnits'></td>
+                        <td id = 'lAP'></td>
+                        <td class = 'bid'></td>
+                        <td id = 'lPL'></td>
+                        <td id = "lClose"><button>close</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <table>
+                <tbody >
+                    <tr>
+                        <th>Last Ask</th>
+                        <th>Units to Add</th>
+                    </tr>
+                    <tr>
+                        <td class = "ask"></td>
+                        <td><input type ='text' id = "lAddU" placeholder = 10></td>
+                        <td id = "lAdd"><button>add</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
     </body>
 
