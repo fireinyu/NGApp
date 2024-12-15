@@ -6,7 +6,7 @@ class Config{
     constructor(){
         this.modelFolder = 'model/';
         this.dataFolder = 'data/';
-        this.baseUrl = `https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?granularity=M30&count=4000`;
+        this.baseUrl = `https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?granularity=M30&count=5000`;
         this.urlHeaders = {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"};
         this.MAs = [5*46,20*46,80*46,160*46];
     };

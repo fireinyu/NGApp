@@ -8,7 +8,6 @@ const shapes = [
     {type:'line',markerType:'none'},
     {type:'line',markerType:'none'},
     {type:'line',markerType:'none'},
-    {type:'line',markerType:'none'},
     {type:'line',markerType:'none'}
     ]
 
@@ -95,7 +94,6 @@ async function updateAcc(){
     .then((jsonObj)=>{
         if (jsonObj){
             let pos = jsonObj.position
-            console.log(pos)
             document.querySelector('#sUnits').innerHTML = -Number(pos.short.units)
             document.querySelector('#lUnits').innerHTML = pos.long.units
             document.querySelector('#sAP').innerHTML = (pos.short.averagePrice)
@@ -155,8 +153,7 @@ liveChart = new CanvasJS.Chart('liveChartContainer',{
         shapes[1],
         shapes[2],
         shapes[3],
-        shapes[4],
-        shapes[5]
+        shapes[4]
 
         
     ]
