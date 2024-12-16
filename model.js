@@ -188,7 +188,7 @@ class Model{
 let model = config.getModel()
 
 function getAction(){
-    let epochs = [3*46,6*46,9*46,12*46,15*46]
+    let epochs = [0,3*46,6*46,9*46,12*46,15*46]
     let outcome,dataPoints,e
     return config.fetchData().then(()=>{
         for (let i in epochs){

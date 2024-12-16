@@ -8,6 +8,7 @@ const shapes = [
     {type:'line',markerType:'none'},
     {type:'line',markerType:'none'},
     {type:'line',markerType:'none'},
+    {type:'line',markerType:'none'},
     {type:'line',markerType:'none'}
     ]
 
@@ -16,7 +17,7 @@ Promise.all([
     .then((response)=>{
         stream = response.body.pipeThrough(new TextDecoderStream()).getReader()
     }),
-    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=1500&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
+    fetch(`https://api-fxtrade.oanda.com/v3/accounts/${accNo}/instruments/NATGAS_USD/candles?count=5000&granularity=M2`,{headers : {'Authorization':`Bearer ${apiKey}`,'Accept-Datetime-Format':"UNIX"}})
     .then((response) => {
         return response.json()
     })
@@ -70,8 +71,8 @@ function streamRecursor(){
             priceData[priceData.length-1].markerSize = 1;
             priceData[priceData.length-1].markerColor = 'orange';
             priceData.push({x:Number(parsed.time)-epoch,y:midPrice,markerSize:6,markerColor:'red'})
-            liveChart.options.axisX.viewportMinimum = parsed.time - epoch - 82800
-            liveChart.options.axisX.viewportMaximum = parsed.time -epoch + 3600
+            //liveChart.options.axisX.viewportMinimum = parsed.time - epoch - 82800
+            //liveChart.options.axisX.viewportMaximum = parsed.time -epoch + 3600
             liveChart.render()
         } catch (error) {
         }
@@ -153,7 +154,8 @@ liveChart = new CanvasJS.Chart('liveChartContainer',{
         shapes[1],
         shapes[2],
         shapes[3],
-        shapes[4]
+        shapes[4],
+        shapes[5]
 
         
     ]
